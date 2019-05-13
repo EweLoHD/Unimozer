@@ -27,32 +27,30 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.Toolkit;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.InputMap;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JSlider;
-import javax.swing.KeyStroke;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import lu.fisch.unimozer.aligner.MainFrame;
 import lu.fisch.unimozer.compilation.CompilationError;
 import lu.fisch.unimozer.console.Console;
 import lu.fisch.unimozer.dialogs.BootLogReport;
 import lu.fisch.unimozer.dialogs.CreateInteractiveProjectDialog;
 import lu.fisch.unimozer.dialogs.JSliderOnJOptionPane;
 import lu.fisch.unimozer.dialogs.NewInteractiveProjectDialog;
+import mdlaf.MaterialLookAndFeel;
+
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextAreaUIBackgroundDrawer;
+import org.fife.ui.rsyntaxtextarea.Theme;
+import com.bulenkov.darcula.DarculaLaf;
 
 /**
  *
@@ -63,9 +61,23 @@ public class Mainform extends JFrame
     lu.fisch.structorizer.gui.Mainform structorizer = null;
     JList errorList = null;
 
+    private JFrame frame = this;
+
     /** Creates new form Unimozer */
     public Mainform()
     {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+
         initComponents();
         
         // split panes eat F8 and F6. This is corrected here.
@@ -279,6 +291,7 @@ public class Mainform extends JFrame
         // encoding
         miEncodingUTF8.setSelected(Unimozer.FILE_ENCODING.equals("UTF-8"));
         miEncodingWindows1252.setSelected(Unimozer.FILE_ENCODING.equals("windows-1252"));
+        
         // window
         int top = Integer.valueOf(ini.getProperty("top","0")).intValue();
         int left = Integer.valueOf(ini.getProperty("left","0")).intValue();
@@ -301,13 +314,29 @@ public class Mainform extends JFrame
         setPreferredSize(new Dimension(width,height));
         setSize(width,height);
         setLocation(new Point(top,left));
+        
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+        
         validate();
+        
         // sliders
-        splitty_1.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_1", "350")));
-        splitty_2.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_2", "500")));
-        splitty_3.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_3", "400")));
-        bottomSplitter.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_4", "400")));
-        codeEditor.jsp.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_5", String.valueOf(Integer.MAX_VALUE))));
+        if(frame.getExtendedState() == JFrame.MAXIMIZED_BOTH) {
+        	int fullWidth = (int) Toolkit.getDefaultToolkit().getScreenSize().getWidth();
+        	int fullHeight = (int) Toolkit.getDefaultToolkit().getScreenSize().getHeight();
+        	
+        	splitty_1.setDividerLocation((int) fullWidth/5*2);
+        	splitty_2.setDividerLocation((int) fullWidth);
+        	splitty_3.setDividerLocation((int) fullHeight - fullHeight/3);
+        	bottomSplitter.setDividerLocation((int) fullHeight - fullHeight/5*2);
+        	codeEditor.jsp.setDividerLocation(fullHeight - fullHeight/5*2 - 70);
+        } else {
+        	splitty_1.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_1", "350")));
+        	splitty_2.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_2", "500")));
+        	splitty_3.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_3", "400")));
+        	bottomSplitter.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_4", "400")));
+        	codeEditor.jsp.setDividerLocation(Integer.valueOf(ini.getProperty("splitty_5", String.valueOf(Integer.MAX_VALUE))));
+        }
+        
         // font size
         Unimozer.DRAW_FONT_SIZE=Integer.valueOf(ini.getProperty("fontSize", "12"));
         //System.out.println(codeEditor.getFont().getSize());
@@ -315,10 +344,11 @@ public class Mainform extends JFrame
         // options
         Unimozer.javaCompileOnTheFly=Boolean.valueOf(ini.getProperty("compileOnTheFly","false"));
         miCompileOnTheFly.setSelected(Unimozer.javaCompileOnTheFly);
-        
+
         RSyntaxTextAreaUIBackgroundDrawer.setSaturation((int) Integer.valueOf(ini.getProperty("structureHighlithningSaturation","0")));
         RSyntaxTextAreaUIBackgroundDrawer.setActive(Boolean.valueOf(ini.getProperty("structureHighlithning","false")));
         
+     
         if(!RSyntaxTextAreaUIBackgroundDrawer.isActive())
             shOff.setSelected(true);
         else if (RSyntaxTextAreaUIBackgroundDrawer.getSaturation()==0)
@@ -612,6 +642,18 @@ public class Mainform extends JFrame
         miEncoding = new javax.swing.JMenu();
         miEncodingUTF8 = new javax.swing.JRadioButtonMenuItem();
         miEncodingWindows1252 = new javax.swing.JRadioButtonMenuItem();
+        miTheme = new javax.swing.JMenu();
+        miDefault = new javax.swing.JRadioButtonMenuItem();
+        miDark = new javax.swing.JRadioButtonMenuItem();
+        miMonokai = new javax.swing.JRadioButtonMenuItem();
+        miEclipse = new javax.swing.JRadioButtonMenuItem();
+        miDraculaTheme = new javax.swing.JRadioButtonMenuItem();
+        bgThemes = new javax.swing.ButtonGroup();
+        miLaF = new javax.swing.JMenu();
+        miSystem = new javax.swing.JRadioButtonMenuItem();
+        miMetal = new javax.swing.JRadioButtonMenuItem();
+        miDracula = new javax.swing.JRadioButtonMenuItem();
+        bgLafs = new javax.swing.ButtonGroup();
         miCompileOnTheFly = new javax.swing.JCheckBoxMenuItem();
         miStructureHighlithningLEvel = new javax.swing.JMenu();
         shOff = new javax.swing.JRadioButtonMenuItem();
@@ -1577,6 +1619,145 @@ public class Mainform extends JFrame
 
         mOptions.add(miEncoding);
 
+        miTheme.setText("Theme");
+
+        miDefault.setSelected(true);
+        miDefault.setText("Default");
+        miDefault.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Theme.load(getClass().getResourceAsStream("/lu/fisch/themes/default.xml")).apply(codeEditor.getCodeArea());
+                    codeEditor.getCodeArea().setHighlightCurrentLine(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miTheme.add(miDefault);
+        bgThemes.add(miDefault);
+
+        miDark.setText("Dark");
+        miDark.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Theme.load(getClass().getResourceAsStream("/lu/fisch/themes/dark.xml")).apply(codeEditor.getCodeArea());
+                    codeEditor.getCodeArea().setHighlightCurrentLine(false);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miTheme.add(miDark);
+        bgThemes.add(miDark);
+
+        miMonokai.setText("Monokai");
+        miMonokai.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Theme.load(getClass().getResourceAsStream("/lu/fisch/themes/monokai.xml")).apply(codeEditor.getCodeArea());
+                    codeEditor.getCodeArea().setHighlightCurrentLine(false);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miTheme.add(miMonokai);
+        bgThemes.add(miMonokai);
+
+        miEclipse.setText("Eclipse");
+        miEclipse.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Theme.load(getClass().getResourceAsStream("/lu/fisch/themes/eclipse.xml")).apply(codeEditor.getCodeArea());
+                    codeEditor.getCodeArea().setHighlightCurrentLine(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miTheme.add(miEclipse);
+        bgThemes.add(miEclipse);
+        
+        miDraculaTheme.setText("Dracula");
+        miDraculaTheme.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                	System.out.println(getClass().getResourceAsStream("/lu/fisch/themes/dracula.xml")); // not finished yet
+                    Theme.load(getClass().getResourceAsStream("/lu/fisch/themes/dracula.xml")).apply(codeEditor.getCodeArea());
+                    codeEditor.getCodeArea().setHighlightCurrentLine(false);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        //miTheme.add(miDraculaTheme);
+        //bgThemes.add(miDraculaTheme);
+
+        mOptions.add(miTheme);
+
+        miLaF.setText("Look and Feel");
+
+        miSystem.setText("System L&F");
+        miSystem.setSelected(true);
+        miSystem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                    diagram.setForeground(Color.WHITE);
+                    SwingUtilities.updateComponentTreeUI(frame);
+                } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miLaF.add(miSystem);
+        bgLafs.add(miSystem);
+
+        miMetal.setText("Metal");
+        miMetal.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    diagram.setForeground(Color.WHITE);
+                    frame.repaint();
+                    UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+                    SwingUtilities.updateComponentTreeUI(frame);
+                    frame.pack();
+                    frame.repaint();
+                } catch (UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        //miLaF.add(miMetal);
+        //bgLafs.add(miMetal);
+
+        miDracula.setText("Dracula");
+        miDracula.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    //UIManager.setLookAndFeel(new DarculaLaf());
+                	UIManager.setLookAndFeel(new DarculaLaf());
+                    diagram.setForeground(Color.decode("#2B2B2B"));
+                    objectizer.setBackground(Color.decode("#44475a"));
+                    SwingUtilities.updateComponentTreeUI(frame);
+                } catch (UnsupportedLookAndFeelException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        miLaF.add(miDracula);
+        bgLafs.add(miDracula);
+
+        mOptions.add(miLaF);
+
         miCompileOnTheFly.setSelected(true);
         miCompileOnTheFly.setText("Compile on-the-fly?");
         miCompileOnTheFly.addActionListener(new java.awt.event.ActionListener() {
@@ -2439,6 +2620,18 @@ public class Mainform extends JFrame
     private javax.swing.JMenu miEncoding;
     private javax.swing.JRadioButtonMenuItem miEncodingUTF8;
     private javax.swing.JRadioButtonMenuItem miEncodingWindows1252;
+    private javax.swing.JMenu miTheme;
+    private javax.swing.JRadioButtonMenuItem miDefault;
+    private javax.swing.JRadioButtonMenuItem miDark;
+    private javax.swing.JRadioButtonMenuItem miMonokai;
+    private javax.swing.JRadioButtonMenuItem miEclipse;
+    private javax.swing.JRadioButtonMenuItem miDraculaTheme;
+    private javax.swing.ButtonGroup bgThemes;
+    private javax.swing.JMenu miLaF;
+    private javax.swing.JRadioButtonMenuItem miSystem;
+    private javax.swing.JRadioButtonMenuItem miMetal;
+    private javax.swing.JRadioButtonMenuItem miDracula;
+    private javax.swing.ButtonGroup bgLafs;
     private javax.swing.JMenuItem miExportPNG;
     private javax.swing.JMenuItem miFind;
     private javax.swing.JMenuItem miFindAgain;
